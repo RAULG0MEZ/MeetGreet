@@ -167,6 +167,9 @@ class MeetGreet {
 
       /* Send our display name */
       conn.send({ type: 'name', name: this.myName });
+
+      /* If we are already sharing screen, let the new peer know */
+      if (this.isSharing) conn.send({ type: 'screen-start' });
     });
 
     conn.on('data', data => this._onData(pid, data));
@@ -390,13 +393,16 @@ class MeetGreet {
       if (sender) sender.replaceTrack(screenTrack).catch(() => {});
     });
 
-    /* Update local preview */
-    const localVideo = document.querySelector('#tile-local video');
-    if (localVideo) localVideo.srcObject = this.screenStream;
-    document.getElementById('tile-local')?.classList.add('sharing');
+    /* Show "you are sharing" placeholder on local tile.
+       Do NOT preview the screen stream locally — capturing the monitor
+       while showing it on the same screen creates an infinite mirror. */
+    document.getElementById('tile-local')?.classList.add('sharing-self');
 
     /* Mark screenshare button as active */
     document.getElementById('btn-screen').classList.add('active-ctrl');
+
+    /* Show top banner */
+    document.getElementById('share-banner').style.display = 'flex';
 
     /* Notify peers */
     this._broadcast({ type: 'screen-start' });
@@ -412,18 +418,17 @@ class MeetGreet {
     this.screenStream?.getTracks().forEach(t => t.stop());
     this.screenStream = null;
 
-    /* Restore camera track */
-    const camTrack = this.localStream.getVideoTracks()[0];
+    /* Restore camera track for remote peers */
+    const camTrack = this.localStream?.getVideoTracks()[0];
     this.connections.forEach(({ call }) => {
       if (!call?.peerConnection) return;
       const sender = call.peerConnection.getSenders().find(s => s.track?.kind === 'video');
       if (sender && camTrack) sender.replaceTrack(camTrack).catch(() => {});
     });
 
-    const localVideo = document.querySelector('#tile-local video');
-    if (localVideo) localVideo.srcObject = this.localStream;
-    document.getElementById('tile-local')?.classList.remove('sharing');
+    document.getElementById('tile-local')?.classList.remove('sharing-self');
     document.getElementById('btn-screen').classList.remove('active-ctrl');
+    document.getElementById('share-banner').style.display = 'none';
 
     this._broadcast({ type: 'screen-stop' });
   }
@@ -595,6 +600,7 @@ class MeetGreet {
 
     /* Screen share */
     document.getElementById('btn-screen').addEventListener('click', () => this._toggleScreen());
+    document.getElementById('btn-stop-banner').addEventListener('click', () => this._stopScreen());
 
     /* Remote control button */
     document.getElementById('btn-control').addEventListener('click', () => {

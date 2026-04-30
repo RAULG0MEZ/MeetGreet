@@ -208,7 +208,7 @@ html, body {
 .tile-muted svg { fill: #fff; }
 .tile.muted .tile-muted { display: flex; }
 
-/* Screen-share badge */
+/* Screen-share badge (shown on remote tile when peer is sharing) */
 .tile-screenshare-badge {
   position: absolute;
   top: 10px;
@@ -222,8 +222,86 @@ html, body {
   align-items: center;
   gap: 4px;
   backdrop-filter: blur(4px);
+  z-index: 3;
 }
 .tile.sharing .tile-screenshare-badge { display: flex; }
+
+/* Remote screen-share: use contain so the whole screen is visible (no crop) */
+.tile.sharing video {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Local tile when YOU are sharing — show a placeholder card instead of the
+   screen capture, otherwise the captured monitor shows itself = infinite mirror */
+.tile.sharing-self video,
+.tile.sharing-self .tile-avatar {
+  visibility: hidden;
+}
+.tile.sharing-self::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 60%, #8ab4f8 100%);
+  z-index: 2;
+}
+.tile.sharing-self::before {
+  content: 'Estás compartiendo tu pantalla';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  text-align: center;
+  padding: 20px;
+  z-index: 3;
+}
+.tile.sharing-self .tile-label,
+.tile.sharing-self .tile-muted {
+  z-index: 4;
+}
+
+/* Share banner (top of viewport when presenting) */
+.share-banner {
+  position: fixed;
+  top: calc(var(--header-h) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent-dark);
+  border-radius: 24px;
+  padding: 8px 8px 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  z-index: 50;
+  animation: slide-down .25s ease;
+}
+.share-banner svg { color: var(--accent); }
+.share-banner button {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.share-banner button:hover { background: var(--danger-dark); }
+
+@keyframes slide-down {
+  from { transform: translate(-50%, -20px); opacity: 0; }
+  to   { transform: translate(-50%, 0);     opacity: 1; }
+}
 
 /* Remote cursor overlay */
 .remote-cursor {
